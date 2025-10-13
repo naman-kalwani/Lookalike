@@ -10,7 +10,7 @@ export default function FilterPanel({ filters, setFilters, onApply }) {
         <select
           value={filters.gender}
           onChange={(e) => setFilters({ ...filters, gender: e.target.value })}
-          className="bg-slate-800/70 text-white placeholder-white border border-white/20 rounded p-2 focus:border-teal-400 focus:ring-1 focus:ring-teal-400 transition"
+          className="bg-slate-800/70 text-white placeholder-white border border-white/20 rounded p-2 focus:border-teal-400 focus:ring-1 focus:ring-teal-400 transition cursor-pointer"
         >
           <option value="">Gender</option>
           <option value="Men">Men</option>
@@ -24,7 +24,7 @@ export default function FilterPanel({ filters, setFilters, onApply }) {
           onChange={(e) =>
             setFilters({ ...filters, baseColour: e.target.value })
           }
-          className="bg-slate-800/70 text-white placeholder-white border border-white/20 rounded p-2 focus:border-teal-400 focus:ring-1 focus:ring-teal-400 transition"
+          className="bg-slate-800/70 text-white placeholder-white border border-white/20 rounded p-2 focus:border-teal-400 focus:ring-1 focus:ring-teal-400 transition cursor-pointer"
         >
           <option value="">Base Colour</option>
           <option value="Black">Black</option>
@@ -38,7 +38,7 @@ export default function FilterPanel({ filters, setFilters, onApply }) {
         <select
           value={filters.category}
           onChange={(e) => setFilters({ ...filters, category: e.target.value })}
-          className="bg-slate-800/70 text-white placeholder-white border border-white/20 rounded p-2 focus:border-teal-400 focus:ring-1 focus:ring-teal-400 transition"
+          className="bg-slate-800/70 text-white placeholder-white border border-white/20 rounded p-2 focus:border-teal-400 focus:ring-1 focus:ring-teal-400 transition cursor-pointer"
         >
           <option value="">Category</option>
           <option value="Apparel">Apparel</option>
@@ -61,13 +61,13 @@ export default function FilterPanel({ filters, setFilters, onApply }) {
           onChange={(e) =>
             setFilters({ ...filters, similarity: Number(e.target.value) })
           }
-          className="w-full accent-teal-400"
+          className="w-full accent-teal-400 cursor-pointer"
         />
       </div>
 
       <button
         onClick={onApply}
-        className="w-full mt-2 text-black bg-gradient-to-r from-teal-600 to-teal-500 px-4 py-2 rounded-lg font-semibold hover:opacity-90"
+        className="w-full mt-2 text-black bg-gradient-to-r from-teal-600 to-teal-500 px-4 py-2 rounded-lg font-semibold hover:opacity-90 cursor-pointer"
       >
         Apply Filters
       </button>
