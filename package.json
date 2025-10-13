@@ -1,0 +1,23 @@
+{
+  "name": "lookalike",
+  "version": "1.0.0",
+  "type": "module",
+  "main": "index.js",
+  "scripts": {
+    "test": "echo \"Error: no test specified\" && exit 1"
+  },
+  "keywords": [],
+  "author": "",
+  "license": "ISC",
+  "description": "",
+  "dependencies": {
+    "cli-progress": "^3.12.0",
+    "cloudinary": "^2.7.0",
+    "csv-parser": "^3.2.0",
+    "dotenv": "^17.2.3",
+    "express": "^5.1.0",
+    "json2csv": "^6.0.0-alpha.2",
+    "mongoose": "^8.19.1",
+    "multer": "^2.0.2"
+  }
+}
