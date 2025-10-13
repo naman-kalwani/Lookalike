@@ -1,49 +1,27 @@
-import { spawn } from "child_process";
-import { fileURLToPath } from "url";
-import { dirname, join } from "path";
+import axios from "axios";
 
-// ES module equivalent of __dirname
-const __filename = fileURLToPath(import.meta.url);
-const __dirname = dirname(__filename);
-
-const scriptPath = join(__dirname, "generate_embed.py");
-
-/**
- * Generates image embedding using Python script.
- * Accepts either an image URL or local file path.
- * @param {string} imagePathOrUrl - URL or local path
- * @returns {Promise<Array<number>>}
- */
-export const getImageEmbedding = (imagePathOrUrl) => {
-  return new Promise((resolve, reject) => {
-    const process = spawn("python", [scriptPath, imagePathOrUrl]);
-
-    let data = "";
-    let error = "";
-
-    process.stdout.on("data", (chunk) => {
-      data += chunk.toString();
-    });
-
-    process.stderr.on("data", (chunk) => {
-      error += chunk.toString();
-    });
-
-    process.on("close", (code) => {
-      if (code !== 0) {
-        reject(new Error(error || `Python process exited with code ${code}`));
-      } else {
-        try {
-          const result = JSON.parse(data);
-          if (result.error) {
-            reject(new Error(result.error));
-          } else {
-            resolve(result);
-          }
-        } catch (err) {
-          reject(new Error("Failed to parse embedding output: " + data));
-        }
+export const getImageEmbedding = async (imageUrl) => {
+  try {
+    const response = await axios.post(
+      "https://api.openai.com/v1/embeddings",
+      {
+        model: "text-embedding-3-large",
+        input: imageUrl, // works with both Cloudinary URLs & direct URLs
+      },
+      {
+        headers: {
+          Authorization: `Bearer ${process.env.OPENAI_API_KEY}`,
+          "Content-Type": "application/json",
+        },
       }
-    });
-  });
+    );
+
+    return response.data.data[0].embedding;
+  } catch (error) {
+    console.error(
+      "Embedding generation failed:",
+      error.response?.data || error.message
+    );
+    throw new Error("Failed to generate embedding");
+  }
 };
