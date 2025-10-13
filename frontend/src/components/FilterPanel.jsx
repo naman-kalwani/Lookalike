@@ -8,7 +8,7 @@ export default function FilterPanel({ filters, setFilters, onApply }) {
       <div className="grid grid-cols-1 md:grid-cols-3 gap-4 mb-4">
         {/* Gender */}
         <select
-          className="bg-white/10 border border-white/20 rounded p-2 text-white"
+          className="bg-slate-800/70 text-white placeholder-white border border-white/20 rounded p-2 focus:border-teal-400 focus:ring-1 focus:ring-teal-400 transition"
           value={filters.gender}
           onChange={(e) => setFilters({ ...filters, gender: e.target.value })}
         >
@@ -20,7 +20,7 @@ export default function FilterPanel({ filters, setFilters, onApply }) {
 
         {/* Base Colour */}
         <select
-          className="bg-white/10 border border-white/20 rounded p-2 text-white"
+          className="bg-slate-800/70 text-white placeholder-white border border-white/20 rounded p-2 focus:border-teal-400 focus:ring-1 focus:ring-teal-400 transition"
           value={filters.baseColour}
           onChange={(e) =>
             setFilters({ ...filters, baseColour: e.target.value })
@@ -36,7 +36,7 @@ export default function FilterPanel({ filters, setFilters, onApply }) {
 
         {/* Category */}
         <select
-          className="bg-white/10 border border-white/20 rounded p-2 text-white"
+          className="bg-slate-800/70 text-white placeholder-white border border-white/20 rounded p-2 focus:border-teal-400 focus:ring-1 focus:ring-teal-400 transition"
           value={filters.category}
           onChange={(e) => setFilters({ ...filters, category: e.target.value })}
         >
@@ -49,24 +49,26 @@ export default function FilterPanel({ filters, setFilters, onApply }) {
 
       {/* Similarity Slider */}
       <div className="mb-4">
-        <label className="block text-white mb-1">
+        <label className="block text-white mb-2">
           Minimum Similarity: {filters.similarity}%
         </label>
         <input
           type="range"
           min="0"
           max="100"
+          step="1"
           value={filters.similarity}
           onChange={(e) =>
             setFilters({ ...filters, similarity: Number(e.target.value) })
           }
-          className="w-full"
+          className="w-full accent-teal-400"
         />
       </div>
 
+      {/* Apply Button */}
       <button
         onClick={onApply}
-        className="mt-2 text-black bg-gradient-to-r from-green-500 to-lime-400 px-4 py-2 rounded-lg font-semibold hover:opacity-90"
+        className="w-full mt-2 text-black bg-gradient-to-r from-teal-600 to-teal-500 px-4 py-2 rounded-lg font-semibold hover:opacity-90"
       >
         Apply Filters
       </button>

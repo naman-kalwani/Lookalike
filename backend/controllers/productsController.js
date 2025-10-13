@@ -3,70 +3,115 @@ import { getImageEmbedding } from "../utils/embeddings.js";
 import cloudinary from "cloudinary";
 import fs from "fs";
 
-// Cloudinary config
+// Cloudinary configuration
 cloudinary.v2.config({
   cloud_name: process.env.CLOUDINARY_CLOUD_NAME,
   api_key: process.env.CLOUDINARY_API_KEY,
   api_secret: process.env.CLOUDINARY_API_SECRET,
 });
 
+// Cosine similarity
 const cosineSimilarity = (vecA, vecB) => {
-  const dot = vecA.reduce((acc, v, i) => acc + v * vecB[i], 0);
+  if (!Array.isArray(vecA) || !Array.isArray(vecB)) return 0;
+  const dot = vecA.reduce((acc, v, i) => acc + v * (vecB[i] ?? 0), 0);
   const magA = Math.sqrt(vecA.reduce((acc, v) => acc + v * v, 0));
   const magB = Math.sqrt(vecB.reduce((acc, v) => acc + v * v, 0));
+  if (magA === 0 || magB === 0) return 0;
   return dot / (magA * magB);
 };
 
-// 🔍 Search + Filter
+// Utility: remove empty/falsy filter fields
+const sanitizeFilters = (filtersObj = {}) => {
+  const out = {};
+  for (const [k, v] of Object.entries(filtersObj)) {
+    // skip undefined/null/empty-string
+    if (v === undefined || v === null) continue;
+    // if it's a string and empty, skip
+    if (typeof v === "string" && v.trim() === "") continue;
+    // keep numeric 0? for similarity we handle separately; other zero is valid
+    out[k] = v;
+  }
+  return out;
+};
+
+// POST /api/products/search → file or imageUrl + optional filters
 export const searchSimilarProducts = async (req, res) => {
   try {
+    // parse filters safely if sent as JSON string (from FormData)
+    let incomingFilters = {};
+    if (req.body.filters) {
+      if (typeof req.body.filters === "string") {
+        try {
+          incomingFilters = JSON.parse(req.body.filters);
+        } catch (e) {
+          // if parse fails, ignore filters and continue
+          console.warn("⚠️ Could not parse filters JSON, ignoring filters.");
+          incomingFilters = {};
+        }
+      } else if (typeof req.body.filters === "object") {
+        incomingFilters = req.body.filters;
+      }
+    }
+
+    // extract minSimilarity (0..1) and remove from DB filters
+    const minSimilarity = Number(incomingFilters.similarity || 0) / 100;
+    const dbFilters = sanitizeFilters({ ...incomingFilters });
+    delete dbFilters.similarity; // similarity isn't a DB field to match
+
     let imageUrl = req.body.imageUrl;
 
-    // Handle uploaded file
+    // If a file was uploaded, upload to cloudinary and get URL
     if (req.file) {
       const uploadResult = await cloudinary.v2.uploader.upload(req.file.path, {
         folder: "lookalike_temp",
       });
       imageUrl = uploadResult.secure_url;
-      fs.unlinkSync(req.file.path);
+      // remove local temp file
+      try {
+        fs.unlinkSync(req.file.path);
+      } catch (e) {
+        /* ignore */
+      }
     }
 
-    if (!imageUrl)
+    if (!imageUrl) {
       return res.status(400).json({ error: "Image URL or file is required" });
+    }
 
-    console.log("🔍 Generating embedding for image...");
+    console.log("🔍 Generating embedding for image:", imageUrl);
     const inputEmbedding = await getImageEmbedding(imageUrl);
-
-    if (!inputEmbedding || inputEmbedding.length === 0)
+    if (!Array.isArray(inputEmbedding) || inputEmbedding.length === 0) {
       return res.status(500).json({ error: "Failed to generate embedding" });
+    }
 
-    console.log("Fetching products from MongoDB...");
-    let products = await Product.find({});
-    console.log(`📦 Comparing with ${products.length} products...`);
+    // Query the DB with sanitized filters
+    console.log("📦 Querying products with DB filters:", dbFilters);
+    // If dbFilters is empty object, Product.find({}) returns all products.
+    let products = await Product.find(
+      Object.keys(dbFilters).length ? dbFilters : {}
+    );
+    console.log(`📊 Products fetched from DB: ${products.length}`);
 
-    // Calculate similarity
-    products = products.map((p) => ({
-      ...p.toObject(),
-      similarity: cosineSimilarity(inputEmbedding, p.embedding),
-    }));
+    // Map similarity and filter by minSimilarity
+    const labelled = products
+      .map((p) => ({
+        ...p.toObject(),
+        similarity: cosineSimilarity(inputEmbedding, p.embedding),
+      }))
+      .filter((p) => p.similarity >= minSimilarity);
 
-    // Apply filters if provided
-    const filters = req.body.filters ? JSON.parse(req.body.filters) : {};
-    products = products.filter((p) => {
-      return (
-        (!filters.gender || p.gender === filters.gender) &&
-        (!filters.baseColour || p.baseColour === filters.baseColour) &&
-        (!filters.category || p.category === filters.category) &&
-        (!filters.similarity || p.similarity * 100 >= filters.similarity)
-      );
-    });
+    console.log(
+      `✅ After similarity filter (>= ${minSimilarity}): ${labelled.length}`
+    );
 
-    // Sort by similarity descending and return top 10
-    products.sort((a, b) => b.similarity - a.similarity);
-    res.status(200).json(products.slice(0, 10));
+    // sort by similarity desc and cut to top N (50)
+    labelled.sort((a, b) => b.similarity - a.similarity);
+    const top = labelled.slice(0, 50);
+
+    return res.status(200).json(top);
   } catch (err) {
     console.error("❌ Error in searchSimilarProducts:", err);
-    res.status(500).json({ error: err.message });
+    return res.status(500).json({ error: err.message || "Internal error" });
   }
 };
 
@@ -75,13 +120,14 @@ export const searchSimilarProducts = async (req, res) => {
 // import cloudinary from "cloudinary";
 // import fs from "fs";
 
-// // Cloudinary config
+// // Cloudinary configuration
 // cloudinary.v2.config({
 //   cloud_name: process.env.CLOUDINARY_CLOUD_NAME,
 //   api_key: process.env.CLOUDINARY_API_KEY,
 //   api_secret: process.env.CLOUDINARY_API_SECRET,
 // });
 
+// // Cosine similarity
 // const cosineSimilarity = (vecA, vecB) => {
 //   const dot = vecA.reduce((acc, v, i) => acc + v * vecB[i], 0);
 //   const magA = Math.sqrt(vecA.reduce((acc, v) => acc + v * v, 0));
@@ -89,11 +135,26 @@ export const searchSimilarProducts = async (req, res) => {
 //   return dot / (magA * magB);
 // };
 
-// // Search by image URL/file + optional filters
-// export const searchAndFilterProducts = async (req, res) => {
+// // POST /api/products/search → file or imageUrl + optional filters
+// export const searchSimilarProducts = async (req, res) => {
 //   try {
 //     let imageUrl = req.body.imageUrl;
-//     const filters = req.body.filters || {}; // optional filters
+
+//     // ✅ Parse filters safely
+//     let filters = {};
+//     if (req.body.filters) {
+//       try {
+//         filters = JSON.parse(req.body.filters);
+//       } catch {
+//         filters = {};
+//       }
+//     }
+
+//     const minSimilarity = Number(filters.similarity || 0) / 100;
+
+//     // Remove similarity from filters for DB query
+//     const dbFilters = { ...filters };
+//     delete dbFilters.similarity;
 
 //     // Handle uploaded file
 //     if (req.file) {
@@ -101,117 +162,33 @@ export const searchSimilarProducts = async (req, res) => {
 //         folder: "lookalike_temp",
 //       });
 //       imageUrl = uploadResult.secure_url;
-//       fs.unlinkSync(req.file.path); // remove temporary file
+//       fs.unlinkSync(req.file.path);
 //     }
 
 //     if (!imageUrl)
 //       return res.status(400).json({ error: "Image URL or file is required" });
 
-//     console.log("🔍 Generating embedding for image...");
+//     console.log("🔍 Generating embedding...");
 //     const inputEmbedding = await getImageEmbedding(imageUrl);
-
-//     if (!inputEmbedding || inputEmbedding.length === 0)
+//     if (!inputEmbedding?.length)
 //       return res.status(500).json({ error: "Failed to generate embedding" });
 
-//     console.log("Fetching products from MongoDB...");
-//     let products = await Product.find({}); // get all products
+//     console.log("📦 Fetching products from DB...");
+//     let products = await Product.find(dbFilters);
 
-//     // Compute similarity
+//     // Compute similarity & filter
 //     products = products
 //       .map((p) => ({
 //         ...p.toObject(),
 //         similarity: cosineSimilarity(inputEmbedding, p.embedding),
 //       }))
+//       .filter((p) => p.similarity >= minSimilarity)
 //       .sort((a, b) => b.similarity - a.similarity)
-//       .slice(0, 50); // top 50 for filtering
+//       .slice(0, 50);
 
-//     // Apply filters if provided
-//     if (Object.keys(filters).length > 0) {
-//       products = products.filter((p) => {
-//         return (
-//           (!filters.gender || p.gender === filters.gender) &&
-//           (!filters.baseColour || p.baseColour === filters.baseColour) &&
-//           (!filters.category || p.category === filters.category)
-//         );
-//       });
-//     }
-
-//     res.status(200).json(products.slice(0, 10)); // return top 10 final results
+//     res.status(200).json(products);
 //   } catch (err) {
-//     console.error("❌ Error in searchAndFilterProducts:", err);
+//     console.error("❌ Error in searchSimilarProducts:", err);
 //     res.status(500).json({ error: err.message });
 //   }
 // };
-
-// // import Product from "../models/Product.js";
-// // import { getImageEmbedding } from "../utils/embeddings.js";
-// // import cloudinary from "cloudinary";
-// // import fs from "fs";
-
-// // // Cloudinary config
-// // cloudinary.v2.config({
-// //   cloud_name: process.env.CLOUDINARY_CLOUD_NAME,
-// //   api_key: process.env.CLOUDINARY_API_KEY,
-// //   api_secret: process.env.CLOUDINARY_API_SECRET,
-// // });
-
-// // const cosineSimilarity = (vecA, vecB) => {
-// //   const dot = vecA.reduce((acc, v, i) => acc + v * vecB[i], 0);
-// //   const magA = Math.sqrt(vecA.reduce((acc, v) => acc + v * v, 0));
-// //   const magB = Math.sqrt(vecB.reduce((acc, v) => acc + v * v, 0));
-// //   return dot / (magA * magB);
-// // };
-
-// // // Search by image URL or uploaded file
-// // export const searchSimilarProducts = async (req, res) => {
-// //   try {
-// //     let imageUrl = req.body.imageUrl;
-
-// //     // Handle uploaded file
-// //     if (req.file) {
-// //       const uploadResult = await cloudinary.v2.uploader.upload(req.file.path, {
-// //         folder: "lookalike_temp",
-// //       });
-// //       imageUrl = uploadResult.secure_url;
-// //       fs.unlinkSync(req.file.path); // remove temporary file
-// //     }
-
-// //     if (!imageUrl)
-// //       return res.status(400).json({ error: "Image URL or file is required" });
-
-// //     console.log("🔍 Generating embedding for image...");
-// //     const inputEmbedding = await getImageEmbedding(imageUrl);
-
-// //     if (!inputEmbedding || inputEmbedding.length === 0)
-// //       return res.status(500).json({ error: "Failed to generate embedding" });
-
-// //     console.log("Fetching products from MongoDB...");
-// //     const products = await Product.find({});
-// //     console.log(`📦 Comparing with ${products.length} products...`);
-
-// //     const results = products
-// //       .map((p) => ({
-// //         ...p.toObject(),
-// //         similarity: cosineSimilarity(inputEmbedding, p.embedding),
-// //       }))
-// //       .sort((a, b) => b.similarity - a.similarity)
-// //       .slice(0, 10); // top 10
-
-// //     res.status(200).json(results);
-// //   } catch (err) {
-// //     console.error("❌ Error in searchSimilarProducts:", err);
-// //     res.status(500).json({ error: err.message });
-// //   }
-// // };
-
-// // // Filter API
-// // export const filterProducts = async (req, res) => {
-// //   try {
-// //     const filters = req.body; // e.g., { gender: "Men", baseColour: "Navy Blue" }
-// //     const products = await Product.find(filters);
-// //     res.status(200).json(products);
-// //   } catch (err) {
-// //     console.error("❌ Error in filterProducts:", err);
-// //     res.status(500).json({ error: err.message });
-// //   }
-// // };
