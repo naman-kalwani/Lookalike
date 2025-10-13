@@ -8,46 +8,46 @@ export default function FilterPanel({ filters, setFilters, onApply }) {
       <div className="grid grid-cols-1 md:grid-cols-3 gap-4 mb-4">
         {/* Gender */}
         <select
-          className="bg-slate-800/70 text-white placeholder-white border border-white/20 rounded p-2 focus:border-teal-400 focus:ring-1 focus:ring-teal-400 transition"
           value={filters.gender}
           onChange={(e) => setFilters({ ...filters, gender: e.target.value })}
+          className="bg-slate-800/70 text-white placeholder-white border border-white/20 rounded p-2 focus:border-teal-400 focus:ring-1 focus:ring-teal-400 transition"
         >
           <option value="">Gender</option>
-          <option>Men</option>
-          <option>Women</option>
-          <option>Unisex</option>
+          <option value="Men">Men</option>
+          <option value="Women">Women</option>
+          <option value="Unisex">Unisex</option>
         </select>
 
         {/* Base Colour */}
         <select
-          className="bg-slate-800/70 text-white placeholder-white border border-white/20 rounded p-2 focus:border-teal-400 focus:ring-1 focus:ring-teal-400 transition"
           value={filters.baseColour}
           onChange={(e) =>
             setFilters({ ...filters, baseColour: e.target.value })
           }
+          className="bg-slate-800/70 text-white placeholder-white border border-white/20 rounded p-2 focus:border-teal-400 focus:ring-1 focus:ring-teal-400 transition"
         >
           <option value="">Base Colour</option>
-          <option>Black</option>
-          <option>White</option>
-          <option>Blue</option>
-          <option>Red</option>
-          <option>Green</option>
+          <option value="Black">Black</option>
+          <option value="White">White</option>
+          <option value="Blue">Blue</option>
+          <option value="Red">Red</option>
+          <option value="Green">Green</option>
         </select>
 
         {/* Category */}
         <select
-          className="bg-slate-800/70 text-white placeholder-white border border-white/20 rounded p-2 focus:border-teal-400 focus:ring-1 focus:ring-teal-400 transition"
           value={filters.category}
           onChange={(e) => setFilters({ ...filters, category: e.target.value })}
+          className="bg-slate-800/70 text-white placeholder-white border border-white/20 rounded p-2 focus:border-teal-400 focus:ring-1 focus:ring-teal-400 transition"
         >
           <option value="">Category</option>
-          <option>Topwear</option>
-          <option>Bottomwear</option>
-          <option>Footwear</option>
+          <option value="Apparel">Apparel</option>
+          <option value="Accessories">Accessories</option>
+          <option value="Footwear">Footwear</option>
+          <option value="Sporting Goods">Sporting Goods</option>
         </select>
       </div>
 
-      {/* Similarity Slider */}
       <div className="mb-4">
         <label className="block text-white mb-2">
           Minimum Similarity: {filters.similarity}%
@@ -65,7 +65,6 @@ export default function FilterPanel({ filters, setFilters, onApply }) {
         />
       </div>
 
-      {/* Apply Button */}
       <button
         onClick={onApply}
         className="w-full mt-2 text-black bg-gradient-to-r from-teal-600 to-teal-500 px-4 py-2 rounded-lg font-semibold hover:opacity-90"

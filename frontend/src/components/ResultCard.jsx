@@ -9,15 +9,16 @@ export default function ResultCard({ product }) {
     >
       <img
         src={product.imageUrl}
-        alt={product.name}
+        alt={product.productDisplayName}
         className="w-full h-48 object-cover rounded-xl mb-3"
       />
-      <h3 className="font-semibold text-white truncate">{product.name}</h3>
+      <h3 className="font-semibold text-white truncate">
+        {product.productDisplayName}
+      </h3>
       <p className="text-sm text-white/80 mb-2">
-        {product.gender} • {product.baseColour} • {product.category}
+        {product.gender} • {product.baseColour} • {product.masterCategory}
       </p>
 
-      {/* Similarity progress bar */}
       {product.similarity !== undefined && (
         <div className="mt-auto">
           <div className="flex justify-between text-xs text-white/70 mb-1">

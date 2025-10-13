@@ -8,22 +8,22 @@ import ResultCard from "./components/ResultCard";
 export default function App() {
   const [file, setFile] = useState(null);
   const [url, setUrl] = useState("");
-  const [allResults, setAllResults] = useState([]); // raw backend results
-  const [filteredResults, setFilteredResults] = useState([]); // frontend filtered
+  const [allResults, setAllResults] = useState([]);
+  const [filteredResults, setFilteredResults] = useState([]);
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState("");
   const [filters, setFilters] = useState({
     gender: "",
     baseColour: "",
     category: "",
-    similarity: 0, // slider
+    similarity: 0,
   });
 
-  // 🔍 Search + backend filter
   const handleSearch = async () => {
     if (!file && !url) return setError("Upload a file or enter a URL!");
     setLoading(true);
     setError("");
+
     try {
       const formData = new FormData();
       if (file) formData.append("file", file);
@@ -36,8 +36,9 @@ export default function App() {
         { headers: { "Content-Type": "multipart/form-data" } }
       );
 
-      setAllResults(res.data);
-      setFilteredResults(res.data);
+      const topResults = res.data.slice(0, 16);
+      setAllResults(topResults);
+      setFilteredResults(topResults);
     } catch {
       setError("Failed to fetch results");
     } finally {
@@ -45,18 +46,19 @@ export default function App() {
     }
   };
 
-  // 🎛️ Frontend filter on already fetched results
   const handleFrontendFilter = () => {
     let results = allResults;
+
     if (filters.gender)
       results = results.filter((r) => r.gender === filters.gender);
     if (filters.baseColour)
       results = results.filter((r) => r.baseColour === filters.baseColour);
     if (filters.category)
-      results = results.filter((r) => r.category === filters.category);
+      results = results.filter((r) => r.masterCategory === filters.category);
     if (filters.similarity)
       results = results.filter((r) => r.similarity >= filters.similarity / 100);
-    setFilteredResults(results);
+
+    setFilteredResults(results.slice(0, 12));
   };
 
   return (
@@ -69,7 +71,6 @@ export default function App() {
         L👀kalike
       </motion.h1>
 
-      {/* Upload + URL */}
       <motion.div
         initial={{ opacity: 0, y: 30 }}
         animate={{ opacity: 1, y: 0 }}
@@ -114,18 +115,15 @@ export default function App() {
         </div>
       </motion.div>
 
-      {/* Filters */}
       <FilterPanel
         filters={filters}
         setFilters={setFilters}
         onApply={handleFrontendFilter}
       />
 
-      {/* Error / Loading */}
       {error && <p className="text-red-400 mb-4">{error}</p>}
       {loading && <p className="text-blue-300 mb-4">Loading...</p>}
 
-      {/* Results */}
       <motion.div
         layout
         className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 lg:grid-cols-4 gap-6 w-full max-w-6xl"
@@ -135,7 +133,6 @@ export default function App() {
         ))}
       </motion.div>
 
-      {/* Empty State */}
       {!loading && filteredResults.length === 0 && (
         <p className="text-white/60 mt-10 text-center">
           Upload an image or apply filters to see results.
