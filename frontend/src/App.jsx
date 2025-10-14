@@ -5,7 +5,6 @@ import { motion } from "framer-motion";
 import FilterPanel from "./components/FilterPanel";
 import ResultCard from "./components/ResultCard";
 
-
 export default function App() {
   const [file, setFile] = useState(null);
   const [url, setUrl] = useState("");
@@ -23,7 +22,6 @@ export default function App() {
   const handleSearch = async () => {
     if (!file && !url)
       return setError("😊 Upload a file or enter a URL first!");
-    // Clear previous results and errors
     setAllResults([]);
     setFilteredResults([]);
     setError("");
@@ -34,8 +32,7 @@ export default function App() {
       if (url) formData.append("imageUrl", url);
       formData.append("filters", JSON.stringify(filters));
 
-      const backendURL =
-        import.meta.env.VITE_BACKEND_URL + "/api/products/search";;
+      const backendURL = "http://localhost:5000/api/products/search"; // LOCAL TEST
 
       const res = await axios.post(backendURL, formData, {
         headers: { "Content-Type": "multipart/form-data" },
@@ -44,7 +41,8 @@ export default function App() {
       const topResults = res.data.slice(0, 16);
       setAllResults(topResults);
       setFilteredResults(topResults);
-    } catch {
+    } catch (err) {
+      console.error(err);
       setError("😔 Failed to fetch results. Try again!");
     } finally {
       setLoading(false);

@@ -1,6 +1,5 @@
 import Product from "../models/Product.js";
 import { getImageEmbedding } from "../utils/embeddings.js";
-// import { getImageEmbedding } from "../utils/embeddingsPy.js";
 import cloudinary from "cloudinary";
 import fs from "fs";
 
@@ -36,18 +35,14 @@ export const searchSimilarProducts = async (req, res) => {
       if (typeof req.body.filters === "string") {
         try {
           incomingFilters = JSON.parse(req.body.filters);
-        } catch {
-          incomingFilters = {};
-        }
-      } else if (typeof req.body.filters === "object") {
+        } catch {}
+      } else if (typeof req.body.filters === "object")
         incomingFilters = req.body.filters;
-      }
     }
 
     const minSimilarity = Number(incomingFilters.similarity || 0) / 100;
     const dbFilters = sanitizeFilters({ ...incomingFilters });
 
-    // Map frontend category to masterCategory in DB
     if (dbFilters.category) {
       dbFilters.masterCategory = dbFilters.category;
       delete dbFilters.category;
@@ -72,7 +67,7 @@ export const searchSimilarProducts = async (req, res) => {
       return res.status(500).json({ error: "Failed to generate embedding" });
     }
 
-    let products = await Product.find(
+    const products = await Product.find(
       Object.keys(dbFilters).length ? dbFilters : {}
     );
     const labelled = products
@@ -90,3 +85,4 @@ export const searchSimilarProducts = async (req, res) => {
     return res.status(500).json({ error: err.message || "Internal error" });
   }
 };
+

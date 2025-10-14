@@ -9,3 +9,4 @@ const upload = multer({ dest: "uploads/" });
 router.post("/search", upload.single("file"), searchSimilarProducts);
 
 export default router;
+

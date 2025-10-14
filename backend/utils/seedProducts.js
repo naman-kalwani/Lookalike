@@ -11,7 +11,6 @@ import cliProgress from "cli-progress";
 
 dotenv.config();
 
-// Fix __dirname in ES module
 const __filename = fileURLToPath(import.meta.url);
 const __dirname = path.dirname(__filename);
 
@@ -36,7 +35,6 @@ const seedProducts = async () => {
           },
           cliProgress.Presets.shades_classic
         );
-
         progressBar.start(results.length, 0);
 
         for (let i = 0; i < results.length; i += BATCH_SIZE) {
@@ -50,7 +48,6 @@ const seedProducts = async () => {
               }
 
               try {
-                // Check if product already exists
                 const exists = await Product.findOne({ productId: item.id });
                 if (exists) {
                   progressBar.increment();
@@ -58,7 +55,6 @@ const seedProducts = async () => {
                 }
 
                 const embedding = await getImageEmbedding(item.image_url);
-
                 const newProduct = new Product({
                   productId: item.id,
                   name: item.productDisplayName,
@@ -73,7 +69,6 @@ const seedProducts = async () => {
                   imageUrl: item.image_url,
                   embedding,
                 });
-
                 await newProduct.save();
               } catch (err) {
                 console.error(

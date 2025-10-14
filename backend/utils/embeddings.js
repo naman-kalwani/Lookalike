@@ -3,20 +3,13 @@ import axios from "axios";
 export const getImageEmbedding = async (imageUrl) => {
   try {
     const response = await axios.post(
-      "https://api.openai.com/v1/embeddings",
-      {
-        model: "text-embedding-3-large",
-        input: imageUrl, // works with both Cloudinary URLs & direct URLs
-      },
-      {
-        headers: {
-          Authorization: `Bearer ${process.env.OPENAI_API_KEY}`,
-          "Content-Type": "application/json",
-        },
-      }
+      "http://127.0.0.1:8000/generate", // updated to Flask port
+      { image_url: imageUrl },
+      { timeout: 30000 }
     );
 
-    return response.data.data[0].embedding;
+    if (response.data?.embedding) return response.data.embedding;
+    throw new Error("No embedding returned from API");
   } catch (error) {
     console.error(
       "Embedding generation failed:",
