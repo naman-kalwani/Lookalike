@@ -1,5 +1,6 @@
 import Product from "../models/Product.js";
 import { getImageEmbedding } from "../utils/embeddings.js";
+// import { getImageEmbedding } from "../utils/embeddingsPy.js";
 import cloudinary from "cloudinary";
 import fs from "fs";
 
