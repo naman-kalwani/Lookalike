@@ -32,7 +32,10 @@ export default function App() {
       if (url) formData.append("imageUrl", url);
       formData.append("filters", JSON.stringify(filters));
 
-      const backendURL = "http://localhost:5000/api/products/search"; // LOCAL TEST
+      const backendURL = `${
+        import.meta.env.VITE_BACKEND_URL
+      }/api/products/search`;
+
 
       const res = await axios.post(backendURL, formData, {
         headers: { "Content-Type": "multipart/form-data" },
