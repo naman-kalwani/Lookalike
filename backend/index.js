@@ -10,25 +10,25 @@ const app = express();
 app.use(express.json());
 app.use(express.urlencoded({ extended: true }));
 
-// ✅ Allow any frontend in production safely
-const allowedOrigins = [
-  process.env.FRONTEND_URL,
-  process.env.FRONTEND_PROD_URL,
-  "http://localhost:5173", // for local dev
-  "https://localhost:5173", // if using HTTPS locally
-];
+// ✅ Multiple allowed URLs
+const rawUrls = process.env.FRONTEND_PROD_URLS || "";
+const allowedOrigins = rawUrls.split(",").map((url) => url.trim());
 
-// ✅ Dynamic CORS
 app.use(
   cors({
     origin: (origin, callback) => {
+      const allowAll = process.env.ALLOW_ALL === "true";
+
       if (
+        allowAll ||
         !origin ||
         allowedOrigins.includes(origin) ||
-        process.env.ALLOW_ALL === "true"
+        origin.startsWith("http://localhost") ||
+        origin.startsWith("https://localhost")
       ) {
         callback(null, true);
       } else {
+        console.log(`❌ CORS blocked: ${origin}`);
         callback(new Error("CORS not allowed for this origin"));
       }
     },
